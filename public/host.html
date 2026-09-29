@@ -116,8 +116,10 @@
          box-shadow: 0 10px 0 rgba(0,0,0,.28); transform: rotateY(90deg) scale(.8); opacity: 0;
          transition: transform .6s cubic-bezier(.3,1.5,.5,1), opacity .3s; }
   .ans.show { transform: none; opacity: 1; }
-  .ans .medal { position: absolute; top: -4.5vh; left: 50%; transform: translateX(-50%); font-size: clamp(40px, 5vw, 100px); }
-  .ans .txt { font-size: clamp(20px, 2.3vw, 46px); font-weight: 700; line-height: 1.15; margin-top: 1.5vh; overflow-wrap: anywhere; }
+  /* The medal sits in the card's flow, poking out of the top edge, so answer text always starts below it. */
+  .ans .medal { display: block; font-size: clamp(40px, 4.4vw, 88px); margin: calc(-3vh - .55em) auto 0; }
+  .ans .txt { font-size: clamp(20px, 2.3vw, 46px); font-weight: 700; line-height: 1.15; margin-top: 1vh; overflow-wrap: anywhere; }
+  .slot.first .ans .medal { margin-top: calc(-5vh - .55em); }
   .ans .by { margin-top: 2vh; display: flex; align-items: center; justify-content: center; gap: .6vw; font-size: clamp(16px, 1.6vw, 32px); font-weight: 600; }
   .ans .by .em { font-size: 1.8em; }
   .ans .votes { margin-top: .8vh; color: #6a5fa0; font-size: clamp(13px, 1.2vw, 24px); font-weight: 600; }
@@ -622,7 +624,7 @@
     cv.width = innerWidth; cv.height = innerHeight;
     const colors = ['#ffd23f', '#ff5d8f', '#3ddcb1', '#8f7bff', '#ffffff', '#ff8a3d'];
     const ox = rect ? rect.left + rect.width / 2 : innerWidth / 2;
-    const oy = rect ? rect.top + rect.height / 3 : innerHeight * 0.35;
+    const oy = rect ? rect.top : innerHeight * 0.35; // burst from the medal, not over the text
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, sp = 4 + Math.random() * 9;
       parts.push({ x: ox, y: oy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 6, r: 4 + Math.random() * 6,
