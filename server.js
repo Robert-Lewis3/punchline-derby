@@ -131,7 +131,7 @@ function handleHost(ws, entry, msg) {
   switch (msg.cmd) {
     case 'settings': room.updateSettings(msg.settings || {}); break;
     case 'start': {
-      const err = room.start();
+      const err = room.start({ fillBots: !!msg.fillBots });
       if (err) send(ws, { type: 'error', error: err });
       break;
     }

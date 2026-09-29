@@ -262,6 +262,7 @@
 
   <footer>
     <button class="btn big" id="btn-start" style="display:none">Start the race ▶</button>
+    <button class="btn quiet" id="btn-bots" style="display:none"></button>
     <button class="btn big" id="btn-next" style="display:none">Next ▶</button>
     <button class="btn quiet" id="btn-skip" style="display:none">Skip timer ⏭</button>
     <span class="kbd" id="keys"></span>
@@ -341,7 +342,7 @@
       $('bigcode').textContent = code;
     } else if (msg.type === 'error') {
       if (msg.error === 'no_such_room') { ss.del('pd_host'); ws.send(JSON.stringify({ type: 'host_create' })); }
-      else toast({ not_enough_players: `Need at least ${PD.LIMITS.MIN_PLAYERS} racers to start.` }[msg.error] || msg.error);
+      else toast({ not_enough_players: `Need at least ${PD.LIMITS.MIN_PLAYERS} racers to start.`, no_humans: 'Join from at least one phone first.' }[msg.error] || msg.error);
     } else if (msg.type === 'replaced') {
       ws.onclose = null;
       $('boot-msg').textContent = 'This game is now being hosted in another tab.';
@@ -381,6 +382,9 @@
     show('btn-start', v.phase === 'lobby');
     $('btn-start').disabled = !v.canStart;
     $('btn-start').textContent = v.canStart ? 'Start the race ▶' : `Need ${PD.LIMITS.MIN_PLAYERS}+ racers`;
+    const here = v.players.filter((p) => p.connected).length;
+    show('btn-bots', v.phase === 'lobby' && !v.canStart && here > 0);
+    $('btn-bots').textContent = `🤖 Start with ${PD.LIMITS.MIN_PLAYERS - here} bot${PD.LIMITS.MIN_PLAYERS - here === 1 ? '' : 's'}`;
     show('btn-next', v.phase === 'reveal' || v.phase === 'standings');
     $('btn-next').textContent = v.phase === 'reveal' && v.round >= v.rounds ? 'Final results 🏁' : v.phase === 'standings' ? `Round ${v.round + 1} ▶` : 'Next ▶';
     show('btn-skip', v.phase === 'prompt' || v.phase === 'vote');
@@ -404,7 +408,7 @@
     seenPlayers = v.players.length;
     $('roster').innerHTML = v.players.length
       ? v.players.map((p) => `<div class="chip ${p.connected ? '' : 'off'}" data-id="${p.id}" title="Click to remove">
-          <span class="em">${p.char ? ch(p.char).emoji : '⏳'}</span>${esc(p.name)}</div>`).join('')
+          <span class="em">${p.char ? ch(p.char).emoji : '⏳'}</span>${esc(p.name)}${p.bot ? ' 🤖' : ''}</div>`).join('')
       : '<div class="empty">Scan the QR code with your phone camera to join. Everyone picks a racer.</div>';
 
     const s = v.settings;
@@ -593,6 +597,7 @@
     if (view.phase === 'reveal' || view.phase === 'standings') cmd('next');
   }
   $('btn-start').onclick = () => cmd('start');
+  $('btn-bots').onclick = () => cmd('start', { fillBots: true });
   $('btn-next').onclick = next;
   $('btn-skip').onclick = () => cmd('skip');
   $('btn-end').onclick = () => { if (confirm('End the game now and show final results?')) cmd('end'); };

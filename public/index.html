@@ -113,6 +113,9 @@
   .delta { color: var(--teal); font-weight: 700; font-size: 22px; margin-top: 6px; }
   .dice { font-size: 12px; background: #efe8ff; color: #5a4bb0; border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
 
+  .hostlink { display: block; text-align: center; color: var(--muted); font-size: 15px; text-decoration: none;
+              padding: 14px; border: 2px dashed var(--line); border-radius: 14px; margin-top: 24px; }
+  .hostlink b { color: var(--yellow); font-weight: 600; }
   .banner { position: fixed; left: 0; right: 0; top: 0; background: var(--pink); color: #fff; text-align: center;
             padding: 6px; font-weight: 600; font-size: 14px; display: none; z-index: 10; }
 </style>
@@ -136,6 +139,8 @@
     </div>
     <button class="btn" id="btn-join">Let's go</button>
     <div class="err" id="join-err"></div>
+    <div class="grow"></div>
+    <a class="hostlink" id="hostlink" href="/host" style="display:none">Running the big screen? <b>Open the host screen →</b></a>
   </section>
 
   <!-- PICK CHARACTER -->
@@ -248,7 +253,7 @@
   // Room code from the QR path (/ABCD) or ?room=; otherwise ask for it.
   const pathCode = location.pathname.replace(/\//g, '').toUpperCase();
   let roomCode = (new URLSearchParams(location.search).get('room') || (/^[A-Z]{4}$/.test(pathCode) ? pathCode : '')).toUpperCase();
-  if (!roomCode) $('roomrow').style.display = 'block';
+  if (!roomCode) { $('roomrow').style.display = 'block'; $('hostlink').style.display = 'block'; }
   $('name').value = store.get('pd_name') || '';
 
   let ws = null, joined = false, wantJoin = false, kicked = false;

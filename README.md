@@ -24,6 +24,10 @@ Most points after the last round crosses the finish line.
 
 Host keys: **Space / Enter / →** next · **F** fullscreen · **M** mute.
 
+**Testing solo:** with fewer than 3 people joined, the lobby shows
+**🤖 Start with N bots**, which fills the empty seats with bots. The bots answer
+with 🎲 jokes and vote at random. They're removed when you hit Play again.
+
 ### Why it scales from 8 to 25+ people
 
 Ballots are sized to the group (`ballots.js`):

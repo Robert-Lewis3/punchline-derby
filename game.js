@@ -18,6 +18,8 @@ const TIME_SCALE = Number(process.env.PD_TIME_SCALE) || 1;
 // Points per vote for answers that came from the 🎲 button (1 = full credit).
 const GENERATED_POINTS = 1;
 const TRAVEL_SHARE = 0.4;
+// Stand-in players for testing with fewer than MIN_PLAYERS people.
+const BOT_NAMES = ['Bot Bella', 'Bot Otto', 'Bot Zippy', 'Bot Rusty', 'Bot Pixel'];
 // Race track scale: a racer whose answers win this share of their matchups
 // every round reaches the finish line exactly at the end of the game.
 const FINISH_WIN_SHARE = 0.45;
@@ -47,6 +49,7 @@ class Room {
 
   resetGame() {
     this.clearTimer();
+    this.clearBotTimers();
     this.phase = 'lobby';
     this.round = 0;
     this.prompts = [];
@@ -79,6 +82,17 @@ class Room {
     this.deadline = null;
   }
 
+  // Bots act on their own short timers; any phase change cancels them.
+  botLater(minSec, maxSec, fn) {
+    const ms = (minSec + Math.random() * (maxSec - minSec)) * 1000 * TIME_SCALE;
+    this.botTimers.push(setTimeout(fn, ms));
+  }
+
+  clearBotTimers() {
+    for (const t of this.botTimers || []) clearTimeout(t);
+    this.botTimers = [];
+  }
+
   remainingMs() {
     return this.deadline ? Math.max(0, this.deadline - Date.now()) : null;
   }
@@ -104,6 +118,18 @@ class Room {
     this.players.set(p.id, p);
     this.changed();
     return { player: p };
+  }
+
+  bots() {
+    return [...this.players.values()].filter((p) => p.bot);
+  }
+
+  addBot() {
+    const used = new Set(this.bots().map((b) => b.name));
+    const name = BOT_NAMES.find((n) => !used.has(n)) || 'Bot ' + (this.bots().length + 1);
+    const { player } = this.addPlayer(name);
+    if (player) player.bot = true;
+    return player;
   }
 
   setConnected(id, connected) {
@@ -194,8 +220,12 @@ class Room {
   }
 
   // ------------------------------------------------------------- flow
-  start() {
+  start({ fillBots = false } = {}) {
     if (this.phase !== 'lobby') return 'not_in_lobby';
+    if (fillBots) {
+      if (!this.connectedPlayers().some((p) => !p.bot)) return 'no_humans';
+      while (this.connectedPlayers().length < LIMITS.MIN_PLAYERS) this.addBot();
+    }
     if (this.connectedPlayers().length < LIMITS.MIN_PLAYERS) return 'not_enough_players';
     const taken = this.takenChars();
     const free = shuffle(CHARACTERS.filter((c) => !taken.has(c.id)));
@@ -226,6 +256,13 @@ class Room {
     for (const p of this.players.values()) p.prevScore = p.score;
     this.phase = 'prompt';
     this.setTimer(this.settings.answerSeconds, () => this.endPrompt());
+    this.clearBotTimers();
+    const round = this.round;
+    for (const b of this.bots()) {
+      this.botLater(3, 12, () => {
+        if (this.phase === 'prompt' && this.round === round && this.players.has(b.id)) this.submit(b.id, this.generateAnswer(b.id));
+      });
+    }
     this.changed();
   }
 
@@ -275,6 +312,8 @@ class Room {
     if (!maxBallots) return this.endVote(); // too few answers to vote on
     this.phase = 'vote';
     this.setTimer(voteSeconds(maxBallots), () => this.endVote());
+    this.clearBotTimers();
+    for (const b of this.bots()) this.botVote(b.id, 0);
     this.changed();
   }
 
@@ -286,6 +325,17 @@ class Room {
     b.pick = entryId;
     this.checkPhaseComplete();
     this.changed();
+  }
+
+  botVote(botId, idx) {
+    const round = this.round;
+    this.botLater(2, 5, () => {
+      if (this.phase !== 'vote' || this.round !== round) return;
+      const b = (this.cur.ballots.get(botId) || [])[idx];
+      if (!b) return;
+      this.vote(botId, idx, b.options[Math.floor(Math.random() * b.options.length)]);
+      this.botVote(botId, idx + 1);
+    });
   }
 
   voterDone(playerId) {
@@ -368,7 +418,8 @@ class Room {
 
   playAgain() {
     if (this.phase !== 'final') return;
-    for (const p of [...this.players.values()]) if (!p.connected) this.players.delete(p.id);
+    // Drop anyone who left, and the bots (they're re-added at start if still needed).
+    for (const p of [...this.players.values()]) if (!p.connected || p.bot) this.players.delete(p.id);
     this.resetGame();
     this.changed();
   }
@@ -423,6 +474,7 @@ class Room {
         name: p.name,
         char: p.char,
         connected: p.connected,
+        bot: !!p.bot,
         score: p.score,
         prevScore: p.prevScore,
         submitted: this.phase === 'prompt' ? cur.entries.has(p.id) : undefined,
