@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1340">
+<title>Punchline Derby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b1340; --bg2: #2a1d5c; --card: #fff8ec; --ink: #1b1340; --muted: #a79fd0;
+    --yellow: #ffd23f; --pink: #ff5d8f; --teal: #3ddcb1; --line: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Fredoka', system-ui, sans-serif; color: #fff;
+    background: radial-gradient(120% 80% at 50% 0%, var(--bg2), var(--bg) 70%) fixed, var(--bg);
+    padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; min-height: 100%;
+  }
+  .topbar { display: flex; align-items: center; gap: 10px; min-height: 40px; margin-bottom: 8px; }
+  .logo { font-weight: 700; font-size: 18px; letter-spacing: .3px; }
+  .logo b { color: var(--yellow); font-weight: 700; }
+  .me { margin-left: auto; display: none; align-items: center; gap: 8px; background: rgba(255,255,255,.08);
+        border-radius: 999px; padding: 4px 12px 4px 6px; font-weight: 600; font-size: 15px; }
+  .me .em { font-size: 24px; line-height: 1; }
+  .me .pts { color: var(--yellow); }
+
+  .screen { display: none; flex: 1; flex-direction: column; width: 100%; max-width: 480px; margin: 0 auto; }
+  .screen.active { display: flex; }
+  .center { text-align: center; }
+  .grow { flex: 1; }
+  h2 { font-size: 26px; font-weight: 700; line-height: 1.15; }
+  .sub { color: var(--muted); font-size: 16px; line-height: 1.4; }
+  .label { color: var(--muted); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+
+  input[type=text], textarea {
+    font: inherit; font-size: 20px; width: 100%; border-radius: 14px; border: 3px solid transparent;
+    background: var(--card); color: var(--ink); padding: 14px 16px; outline: none; resize: none;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--yellow); }
+  #room { text-transform: uppercase; letter-spacing: 6px; text-align: center; }
+
+  .btn {
+    font: inherit; font-size: 20px; font-weight: 700; width: 100%; border: 0; border-radius: 16px;
+    padding: 16px; margin-top: 12px; cursor: pointer; color: var(--ink); background: var(--yellow);
+    box-shadow: 0 5px 0 #c99b00; transition: transform .06s, box-shadow .06s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #c99b00; }
+  .btn:disabled { opacity: .5; }
+  .btn.alt { background: #efe8ff; box-shadow: 0 5px 0 #b6a8e6; }
+  .btn.alt:active { box-shadow: 0 1px 0 #b6a8e6; }
+  .btn.ghost { background: transparent; color: var(--muted); box-shadow: none; font-size: 16px; font-weight: 600; }
+  .err { color: #ff8fab; min-height: 1.4em; margin-top: 10px; text-align: center; font-weight: 500; }
+
+  /* character picker */
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+  .char {
+    font: inherit; border: 0; border-radius: 16px; background: rgba(255,255,255,.08); color: #fff;
+    padding: 10px 2px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;
+  }
+  .char .em { font-size: 38px; line-height: 1.1; }
+  .char .nm { font-size: 11px; color: var(--muted); font-weight: 500; }
+  .char.mine { background: var(--yellow); }
+  .char.mine .nm { color: var(--ink); }
+  .char.taken { opacity: .25; pointer-events: none; }
+
+  .big-em { font-size: 96px; line-height: 1; margin: 18px 0 6px; animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-8px); } }
+  .pulse { animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+
+  /* round */
+  .roundrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .pill { background: rgba(255,255,255,.1); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .timer { font-size: 30px; font-weight: 700; color: var(--yellow); min-width: 2ch; text-align: right; }
+  .timer.hurry { color: var(--pink); animation: pulse .5s steps(2) infinite; }
+  .prompt {
+    background: var(--card); color: var(--ink); border-radius: 18px; padding: 18px; font-size: 22px;
+    font-weight: 600; line-height: 1.25; box-shadow: 0 6px 0 rgba(0,0,0,.25); margin-bottom: 14px;
+  }
+  .prompt.small { font-size: 16px; padding: 12px 14px; }
+  .counter { text-align: right; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .locked { background: rgba(61,220,177,.14); border: 2px solid var(--teal); border-radius: 16px; padding: 16px; margin-top: 6px; }
+  .locked .t { color: var(--teal); font-weight: 700; font-size: 18px; margin-bottom: 6px; }
+  .locked .a { font-size: 20px; line-height: 1.3; }
+
+  .opt {
+    font: inherit; width: 100%; text-align: left; border: 0; border-radius: 16px; margin-top: 12px;
+    padding: 18px 16px; font-size: 20px; line-height: 1.25; font-weight: 500; color: var(--ink);
+    background: var(--card); box-shadow: 0 5px 0 #cfc3a8; cursor: pointer; transition: transform .08s;
+  }
+  .opt:active { transform: translateY(3px); }
+  .opt.picked { background: var(--yellow); box-shadow: 0 5px 0 #c99b00; transform: scale(1.02); }
+  .opt:disabled:not(.picked) { opacity: .45; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin: 4px 0 2px; }
+  .dots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,.2); }
+  .dots i.on { background: var(--yellow); }
+
+  .card { background: var(--card); color: var(--ink); border-radius: 18px; padding: 16px; margin-top: 12px; }
+  .card .k { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; color: #7a6fb0; }
+  .card .v { font-size: 20px; font-weight: 600; margin-top: 4px; line-height: 1.3; }
+  .card .s { font-size: 15px; color: #5a5080; margin-top: 6px; }
+  .toprow { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .toprow:first-child { border-top: 0; }
+  .toprow .md { font-size: 24px; }
+  .toprow .tx { font-size: 16px; line-height: 1.3; }
+  .toprow .by { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .rankbig { font-size: 72px; font-weight: 700; color: var(--yellow); line-height: 1; margin-top: 16px; }
+  .delta { color: var(--teal); font-weight: 700; font-size: 22px; margin-top: 6px; }
+  .dice { font-size: 12px; background: #efe8ff; color: #5a4bb0; border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+
+  .banner { position: fixed; left: 0; right: 0; top: 0; background: var(--pink); color: #fff; text-align: center;
+            padding: 6px; font-weight: 600; font-size: 14px; display: none; z-index: 10; }
+</style>
+</head>
+<body>
+  <div class="banner" id="banner">Reconnecting…</div>
+  <div class="topbar">
+    <div class="logo">Punchline <b>Derby</b></div>
+    <div class="me" id="me"><span class="em" id="me-em"></span><span id="me-name"></span><span class="pts" id="me-pts"></span></div>
+  </div>
+
+  <!-- JOIN -->
+  <section class="screen active" id="s-join">
+    <h2 style="margin-top:18px">Join the race!</h2>
+    <p class="sub" style="margin-top:6px">Write something funny. Vote for the funniest. First to the finish wins.</p>
+    <div class="label">Your name</div>
+    <input type="text" id="name" maxlength="14" placeholder="Name" autocomplete="off" autocapitalize="words">
+    <div id="roomrow" style="display:none">
+      <div class="label">Room code</div>
+      <input type="text" id="room" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters">
+    </div>
+    <button class="btn" id="btn-join">Let's go</button>
+    <div class="err" id="join-err"></div>
+  </section>
+
+  <!-- PICK CHARACTER -->
+  <section class="screen" id="s-pick">
+    <h2>Pick your racer</h2>
+    <p class="sub" style="margin-top:4px">They'll run on the big screen.</p>
+    <div class="grid" id="grid"></div>
+    <div class="err" id="pick-err"></div>
+  </section>
+
+  <!-- LOBBY -->
+  <section class="screen center" id="s-lobby">
+    <div class="grow"></div>
+    <div class="big-em" id="lobby-em"></div>
+    <h2 id="lobby-name"></h2>
+    <p class="sub" style="margin-top:6px" id="lobby-count"></p>
+    <div class="grow"></div>
+    <p class="sub pulse">Waiting for the host to start…</p>
+    <button class="btn ghost" id="btn-change">Change racer</button>
+  </section>
+
+  <!-- PROMPT -->
+  <section class="screen" id="s-prompt">
+    <div class="roundrow"><span class="pill" id="p-round"></span><span class="timer" id="p-timer"></span></div>
+    <div class="prompt" id="p-text"></div>
+    <div id="p-form">
+      <textarea id="answer" rows="3" maxlength="80" placeholder="Type something funny…"></textarea>
+      <div class="counter" id="counter">0/80</div>
+      <button class="btn alt" id="btn-gen">🎲 Write it for me</button>
+      <button class="btn" id="btn-submit">Lock it in</button>
+    </div>
+    <div id="p-done" style="display:none">
+      <div class="locked"><div class="t">Locked in ✓</div><div class="a" id="p-mine"></div></div>
+      <p class="sub center pulse" style="margin-top:18px">Waiting for everyone else…</p>
+    </div>
+  </section>
+
+  <!-- VOTE -->
+  <section class="screen" id="s-vote">
+    <div class="roundrow"><span class="pill" id="v-round"></span><span class="timer" id="v-timer"></span></div>
+    <div class="prompt small" id="v-text"></div>
+    <div id="v-ballot">
+      <div class="dots" id="v-dots"></div>
+      <p class="sub center" style="margin-top:6px">Tap the funniest</p>
+      <div id="v-opts"></div>
+    </div>
+    <div id="v-done" class="center" style="display:none">
+      <div class="big-em">👀</div>
+      <h2 id="v-done-title">Votes in!</h2>
+      <p class="sub" style="margin-top:6px" id="v-done-sub">Eyes on the big screen.</p>
+    </div>
+  </section>
+
+  <!-- REVEAL -->
+  <section class="screen" id="s-reveal">
+    <div class="roundrow"><span class="pill" id="r-round"></span></div>
+    <div class="prompt small" id="r-text"></div>
+    <div class="card" id="r-mine"></div>
+    <div class="label">Top 3</div>
+    <div id="r-top"></div>
+  </section>
+
+  <!-- STANDINGS -->
+  <section class="screen center" id="s-standings">
+    <div class="grow"></div>
+    <p class="sub">After round <span id="st-round"></span></p>
+    <div class="rankbig" id="st-rank"></div>
+    <p class="sub" id="st-of"></p>
+    <div class="delta" id="st-delta"></div>
+    <div class="grow"></div>
+    <p class="sub pulse">Next round coming up…</p>
+  </section>
+
+  <!-- FINAL -->
+  <section class="screen center" id="s-final">
+    <div class="big-em" id="f-em"></div>
+    <h2 id="f-title"></h2>
+    <p class="sub" style="margin-top:4px" id="f-sub"></p>
+    <div class="card" style="text-align:left" id="f-podium"></div>
+    <div class="card" style="text-align:left" id="f-best"></div>
+    <div class="grow"></div>
+    <p class="sub" style="margin-top:14px">Thanks for playing!</p>
+  </section>
+
+  <!-- MESSAGE -->
+  <section class="screen center" id="s-msg">
+    <div class="grow"></div>
+    <div class="big-em" id="m-em">⏳</div>
+    <h2 id="m-title"></h2>
+    <p class="sub" style="margin-top:6px" id="m-sub"></p>
+    <div class="grow"></div>
+  </section>
+
+<script src="/shared.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const MAX = PD.LIMITS.ANSWER_MAX;
+  const SCREENS = ['s-join', 's-pick', 's-lobby', 's-prompt', 's-vote', 's-reveal', 's-standings', 's-final', 's-msg'];
+  const show = (id) => SCREENS.forEach((s) => $(s).classList.toggle('active', s === id));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const emoji = (id) => (PD.character(id) || { emoji: '❔' }).emoji;
+  const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+  const store = {
+    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+    del: (k) => { try { localStorage.removeItem(k); } catch {} },
+  };
+
+  // Room code from the QR path (/ABCD) or ?room=; otherwise ask for it.
+  const pathCode = location.pathname.replace(/\//g, '').toUpperCase();
+  let roomCode = (new URLSearchParams(location.search).get('room') || (/^[A-Z]{4}$/.test(pathCode) ? pathCode : '')).toUpperCase();
+  if (!roomCode) $('roomrow').style.display = 'block';
+  $('name').value = store.get('pd_name') || '';
+
+  let ws = null, joined = false, wantJoin = false, kicked = false;
+  let playerId = roomCode ? store.get('pd_pid_' + roomCode) : null;
+  let view = null, picking = false, promptRound = -1, ballotKey = '', deadline = 0, wakeLock = null;
+
+  // ------------------------------------------------------------ socket
+  function connect() {
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host);
+    ws.onopen = () => { $('banner').style.display = 'none'; if (wantJoin) sendJoin(); };
+    ws.onmessage = (ev) => handle(JSON.parse(ev.data));
+    ws.onclose = () => {
+      if (kicked) return;
+      if (joined) $('banner').style.display = 'block';
+      setTimeout(connect, 1200);
+    };
+  }
+  const out = (o) => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+  const sendJoin = () => out({ type: 'join', room: roomCode, name: store.get('pd_name'), playerId });
+
+  $('btn-join').onclick = () => {
+    const name = $('name').value.trim();
+    if (!roomCode) roomCode = $('room').value.trim().toUpperCase();
+    if (!name) return ($('join-err').textContent = 'Enter a name first!');
+    if (!/^[A-Z]{4}$/.test(roomCode)) { roomCode = ''; return ($('join-err').textContent = 'Room codes are 4 letters'); }
+    store.set('pd_name', name);
+    playerId = store.get('pd_pid_' + roomCode);
+    wantJoin = true;
+    keepAwake();
+    if (ws && ws.readyState === 1) sendJoin(); else if (!ws) connect();
+  };
+
+  function handle(msg) {
+    if (msg.type === 'joined') {
+      joined = true;
+      playerId = msg.playerId;
+      store.set('pd_pid_' + roomCode, playerId);
+    } else if (msg.type === 'error') {
+      const errs = { no_such_room: "Can't find that room. Check the code on the big screen.", room_full: 'This room is full.',
+        character_taken: 'Someone just grabbed that one. Pick another!' };
+      if (msg.error === 'no_such_room') {
+        joined = false; wantJoin = false; store.del('pd_pid_' + roomCode);
+        if (!/^[A-Z]{4}$/.test(pathCode)) { roomCode = ''; $('roomrow').style.display = 'block'; }
+        show('s-join');
+        $('join-err').textContent = errs.no_such_room;
+      } else if (msg.error === 'character_taken') {
+        $('pick-err').textContent = errs.character_taken;
+      } else {
+        $('join-err').textContent = errs[msg.error] || msg.error;
+      }
+    } else if (msg.type === 'kicked') {
+      kicked = true; joined = false; store.del('pd_pid_' + roomCode);
+      message('👋', 'You were removed', 'The host removed you from this game.');
+      ws.close();
+    } else if (msg.type === 'generated') {
+      $('answer').value = msg.text;
+      onInput();
+      buzz(15);
+    } else if (msg.type === 'state') {
+      view = msg.view;
+      deadline = view.remainingMs != null ? Date.now() + view.remainingMs : 0;
+      render();
+    }
+  }
+
+  // ------------------------------------------------------------ render
+  function message(em, title, sub) {
+    $('m-em').textContent = em; $('m-title').textContent = title; $('m-sub').textContent = sub || '';
+    show('s-msg');
+  }
+
+  function render() {
+    const v = view;
+    if (!v) return;
+    const me = v.me;
+    $('me').style.display = me.char ? 'flex' : 'none';
+    $('me-em').textContent = emoji(me.char);
+    $('me-name').textContent = me.name;
+    $('me-pts').textContent = v.phase === 'lobby' ? '' : me.score + ' pts';
+
+    if (!me.char || (picking && v.phase === 'lobby')) return renderPick(v);
+    picking = false;
+    const roundLabel = `Round ${v.round} of ${v.rounds}`;
+
+    switch (v.phase) {
+      case 'lobby':
+        $('lobby-em').textContent = emoji(me.char);
+        $('lobby-name').textContent = me.name;
+        $('lobby-count').textContent = v.playerCount === 1 ? "You're the first one here!" : `${v.playerCount} racers in the lobby`;
+        show('s-lobby');
+        break;
+
+      case 'prompt':
+        $('p-round').textContent = roundLabel;
+        $('p-text').textContent = v.prompt;
+        if (promptRound !== v.round) {
+          promptRound = v.round;
+          $('answer').value = '';
+          onInput();
+        }
+        $('p-form').style.display = v.submitted ? 'none' : 'block';
+        $('p-done').style.display = v.submitted ? 'block' : 'none';
+        $('p-mine').textContent = v.myAnswer || '';
+        show('s-prompt');
+        break;
+
+      case 'vote': renderVote(v, roundLabel); break;
+
+      case 'reveal': {
+        $('r-round').textContent = roundLabel;
+        $('r-text').textContent = v.prompt;
+        const m = v.myResult;
+        const medal = m && m.rank <= 3 && m.wins > 0 ? ['🥇', '🥈', '🥉'][m.rank - 1] + ' ' : '';
+        $('r-mine').innerHTML = m
+          ? `<div class="k">Your answer</div><div class="v">${esc(m.text)}${m.generated ? '<span class="dice">🎲</span>' : ''}</div>
+             <div class="s">${medal}Picked <b>${m.wins}</b> of ${m.shows} times · #${m.rank} of ${m.of}</div>`
+          : `<div class="k">Your answer</div><div class="s">You sat this round out.</div>`;
+        $('r-top').innerHTML = (v.top3 || []).map((c, i) => `
+          <div class="toprow"><div class="md">${['🥇', '🥈', '🥉'][i]}</div><div>
+            <div class="tx">${esc(c.text)}${c.generated ? '<span class="dice">🎲</span>' : ''}</div>
+            <div class="by">${emoji(c.author.char)} ${esc(c.author.name)} · ${c.wins}/${c.shows} votes</div></div></div>`).join('');
+        show('s-reveal');
+        break;
+      }
+
+      case 'standings':
+        $('st-round').textContent = `${v.round} of ${v.rounds}`;
+        $('st-rank').textContent = '#' + me.rank;
+        $('st-of').textContent = `of ${v.playerCount} racers · ${me.score} pts`;
+        $('st-delta').textContent = me.delta > 0 ? `+${me.delta} this round` : 'No votes this round — next one!';
+        show('s-standings');
+        break;
+
+      case 'final': {
+        const won = me.rank === 1;
+        $('f-em').textContent = won ? '🏆' : me.rank <= 3 ? ['', '🥇', '🥈', '🥉'][me.rank] : emoji(me.char);
+        $('f-title').textContent = won ? 'You won the derby!' : `You finished #${me.rank}`;
+        $('f-sub').textContent = `${me.score} points`;
+        $('f-podium').innerHTML = '<div class="k">Podium</div>' + (v.podium || []).map((p) =>
+          `<div class="s" style="font-size:18px;color:#1b1340">${['🥇', '🥈', '🥉'][p.rank - 1] || '#' + p.rank} ${emoji(p.char)} ${esc(p.name)} · ${p.score}</div>`).join('');
+        const b = v.bestAnswer;
+        $('f-best').style.display = b ? 'block' : 'none';
+        if (b) $('f-best').innerHTML = `<div class="k">Answer of the game</div><div class="v">${esc(b.text)}</div>
+          <div class="s">${emoji(b.author.char)} ${esc(b.author.name)} · ${b.wins}/${b.shows} votes · “${esc(b.prompt)}”</div>`;
+        show('s-final');
+        break;
+      }
+    }
+  }
+
+  function renderPick(v) {
+    const taken = new Set(v.taken);
+    const allTaken = PD.CHARACTERS.every((c) => taken.has(c.id));
+    $('grid').innerHTML = PD.CHARACTERS.map((c) => {
+      const cls = c.id === v.me.char ? 'mine' : taken.has(c.id) && !allTaken ? 'taken' : '';
+      return `<button class="char ${cls}" data-id="${c.id}"><span class="em">${c.emoji}</span><span class="nm">${c.name}</span></button>`;
+    }).join('');
+    show('s-pick');
+  }
+  $('grid').onclick = (e) => {
+    const b = e.target.closest('.char');
+    if (!b) return;
+    $('pick-err').textContent = '';
+    picking = false;
+    buzz(20);
+    out({ type: 'pick_char', char: b.dataset.id });
+  };
+  $('btn-change').onclick = () => { picking = true; render(); };
+
+  function renderVote(v, roundLabel) {
+    $('v-round').textContent = roundLabel;
+    $('v-text').textContent = v.prompt;
+    const ballots = v.ballots || [];
+    const idx = ballots.findIndex((b) => b.pick === null);
+    if (!ballots.length || idx < 0) {
+      $('v-ballot').style.display = 'none';
+      $('v-done').style.display = 'block';
+      $('v-done-title').textContent = ballots.length ? 'Votes in!' : 'Sit tight!';
+      $('v-done-sub').textContent = ballots.length ? 'Eyes on the big screen.' : "You'll be voting next round.";
+      ballotKey = '';
+    } else {
+      $('v-ballot').style.display = 'block';
+      $('v-done').style.display = 'none';
+      const key = v.round + ':' + idx;
+      if (key !== ballotKey) {
+        ballotKey = key;
+        $('v-dots').innerHTML = ballots.map((_, i) => `<i class="${i <= idx ? 'on' : ''}"></i>`).join('');
+        $('v-opts').innerHTML = ballots[idx].options.map((o) => `<button class="opt" data-id="${o.id}">${esc(o.text)}</button>`).join('');
+        $('v-opts').dataset.ballot = idx;
+      }
+    }
+    show('s-vote');
+  }
+  $('v-opts').onclick = (e) => {
+    const b = e.target.closest('.opt');
+    if (!b || b.disabled) return;
+    buzz(25);
+    b.classList.add('picked');
+    $('v-opts').querySelectorAll('.opt').forEach((x) => { x.disabled = true; });
+    const ballot = Number($('v-opts').dataset.ballot);
+    setTimeout(() => out({ type: 'vote', ballot, pick: b.dataset.id }), 250);
+  };
+
+  // ------------------------------------------------------------ answer form
+  let draftTimer = null;
+  function onInput() {
+    const n = $('answer').value.length;
+    $('counter').textContent = `${n}/${MAX}`;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(() => out({ type: 'draft', text: $('answer').value }), 300);
+  }
+  $('answer').addEventListener('input', onInput);
+  $('answer').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('btn-submit').click(); } });
+  $('btn-gen').onclick = () => { buzz(10); out({ type: 'generate' }); };
+  $('btn-submit').onclick = () => {
+    const text = $('answer').value.trim();
+    if (!text) { $('answer').focus(); return; }
+    buzz(30);
+    out({ type: 'submit', text });
+    $('answer').blur();
+  };
+
+  // ------------------------------------------------------------ timer + wake lock
+  setInterval(() => {
+    if (!deadline) { $('p-timer').textContent = ''; $('v-timer').textContent = ''; return; }
+    const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    for (const id of ['p-timer', 'v-timer']) {
+      $(id).textContent = left;
+      $(id).classList.toggle('hurry', left <= 10);
+    }
+  }, 250);
+
+  async function keepAwake() {
+    try { if ('wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+    if (wakeLock) wakeLock.addEventListener('release', () => { wakeLock = null; }, { once: true });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && joined) keepAwake(); });
+
+  // Rejoin automatically if this phone was already in this room (refresh, lock screen).
+  if (roomCode && playerId && store.get('pd_name')) wantJoin = true;
+  if (wantJoin) connect();
+  else if (roomCode) connect();
+})();
+</script>
+</body>
+</html>
