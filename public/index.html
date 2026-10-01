@@ -369,7 +369,8 @@
         const medal = m && m.rank <= 3 && m.wins > 0 ? ['🥇', '🥈', '🥉'][m.rank - 1] + ' ' : '';
         $('r-mine').innerHTML = m
           ? `<div class="k">Your answer</div><div class="v">${esc(m.text)}${m.generated ? '<span class="dice">🎲</span>' : ''}</div>
-             <div class="s">${medal}Picked <b>${m.wins}</b> of ${m.shows} times · #${m.rank} of ${m.of}</div>`
+             <div class="s">${medal}Picked <b>${m.wins}</b> of ${m.shows} times · #${m.rank} of ${m.of}</div>
+             ${m.capped ? `<div class="s">🔥 Round max reached: +${m.points}</div>` : ''}`
           : `<div class="k">Your answer</div><div class="s">You sat this round out.</div>`;
         $('r-top').innerHTML = (v.top3 || []).map((c, i) => `
           <div class="toprow"><div class="md">${['🥇', '🥈', '🥉'][i]}</div><div>
@@ -383,7 +384,8 @@
         $('st-round').textContent = `${v.round} of ${v.rounds}`;
         $('st-rank').textContent = '#' + me.rank;
         $('st-of').textContent = `of ${v.playerCount} racers · ${me.score} pts`;
-        $('st-delta').textContent = me.delta > 0 ? `+${me.delta} this round` : 'No votes this round — next one!';
+        $('st-delta').textContent = me.delta <= 0 ? 'No votes this round — next one!'
+          : v.roundCap && me.delta >= v.roundCap ? `+${me.delta} this round — round max! 🔥` : `+${me.delta} this round`;
         show('s-standings');
         break;
 

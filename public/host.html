@@ -477,7 +477,7 @@
           <div class="medal em">${['🥇', '🥈', '🥉'][i]}</div>
           <div class="txt">${esc(c.text)}</div>
           <div class="by"><span class="em">${ch(c.author.char).emoji}</span>${esc(c.author.name)}${c.generated ? '<span class="dice" title="Used the 🎲 button">🎲 assist</span>' : ''}</div>
-          <div class="votes">Picked ${c.wins} of ${c.shows} times</div>
+          <div class="votes">Picked ${c.wins} of ${c.shows} times${c.capped ? ` · <b>+${c.points} round max</b>` : ''}</div>
         </div><div class="base">${i + 1}</div></div>`;
     }).join('') || '<div class="hint">No answers this round!</div>';
     const seq = [2, 1, 0].filter((i) => cards[i]);
@@ -496,9 +496,9 @@
   function revealComplete() { return !view.top3 || revealShown >= Math.min(3, view.top3.length); }
 
   // ------------------------------------------------------------ race
-  // Positions use a fixed scale set at game start (view.raceScale ≈ points a
-  // strong answerer earns over the whole game), so racers only ever move
-  // forward. Nobody reaches the line early; on the final screen the leader(s)
+  // Positions use a fixed scale set at game start (view.raceScale = the
+  // per-round point cap × rounds), so racers only ever move forward and no
+  // single round moves anyone more than 1/rounds of the track. Nobody reaches the line early; on the final screen the leader(s)
   // cross it.
   const CAP = 0.97;
   const xFor = (score, scale) => Math.min(CAP, score / Math.max(1, scale));
@@ -530,7 +530,7 @@
         <div class="tag" data-tag="${p.id}" style="--c:${ch(p.char).color};font-size:${tagSize}px">${laneTag(p)}</div>
         <div class="turf"><div class="startline"></div><div class="finish"></div>
           <div class="runner" id="run-${p.id}" style="font-size:${size}px;left:${leftPct(xFor(p.prevScore, v.raceScale), false)}%">
-            <span class="em">${ch(p.char).emoji}</span><span class="plus">+${p.score - p.prevScore}</span></div></div>
+            <span class="em">${ch(p.char).emoji}</span><span class="plus">+${p.score - p.prevScore}${v.roundCap && p.score - p.prevScore >= v.roundCap ? ' MAX' : ''}</span></div></div>
       </div>`).join('');
     void track.offsetWidth;
     requestAnimationFrame(() => requestAnimationFrame(() => {

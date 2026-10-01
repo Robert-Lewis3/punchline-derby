@@ -44,6 +44,13 @@ Every answer is shown the same number of times (±1), so raw votes are a fair
 score. Top 3 is ranked by win rate. Ties in the final standings are broken by
 round wins, then by top-3 finishes.
 
+**Round max.** One answer can earn at most 60% of its matchups in points per
+round (8 players: 4 points, 13: 8, 20: 10). The track is sized so a racer who
+hits the max every round arrives right at the finish line. So no single round,
+even a unanimous one, can move anyone more than 1/rounds of the track, and
+nobody crosses before the final screen. Reveal cards and the race show
+"round max" when it kicks in.
+
 ## Editing prompts
 
 All prompts live in `prompts.js`: 52 of them (22 travel), each with 20 canned
@@ -58,7 +65,7 @@ mixed into the game. Good for inside jokes.
 Tuning knobs at the top of `game.js`:
 - `GENERATED_POINTS`: points per vote for 🎲 answers (1 = full credit, 0.5 = half)
 - `TRAVEL_SHARE`: share of rounds that use travel prompts
-- `FINISH_WIN_SHARE`: race track length (lower = racers get further along before the finish)
+- `MAX_ROUND_SHARE`: the round max, as a share of an answer's matchups (also sets track length)
 
 ## Running it
 
@@ -79,7 +86,8 @@ npm test
 
 Runs the ballot fairness tests for 3–40 players, the prompt-pack checks, then a full bot game. `npm run sim --
 --bots 25 --rounds 5` plays a bigger game. `node test/sim.js --room ABCD --bots 12`
-adds bots to a room you're hosting in a browser.
+adds bots to a room you're hosting in a browser. Add `--rig` to make them all
+vote for one bot, to see the round max in action.
 
 ## Files
 

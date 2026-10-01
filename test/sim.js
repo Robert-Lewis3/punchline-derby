@@ -3,6 +3,7 @@
 //   node test/sim.js                       full auto: bots + a bot host play a whole game
 //   node test/sim.js --bots 25 --rounds 5  (options for full auto)
 //   node test/sim.js --room ABCD --bots 12 bots join a room you host in a browser
+//   add --rig to make every bot vote for Ava (tests the per-round cap)
 //
 // Start the server with PD_TIME_SCALE=0.05 to make timers fast for full auto.
 // Some bots type, some use the 🎲 button, some idle so time runs out.
@@ -20,6 +21,7 @@ const ROUNDS = parseInt(opt('rounds', '5'), 10);
 const ROOM = opt('room', null);
 const IDLE_RATE = parseFloat(opt('idle', '0.1'));
 const PACE = parseFloat(opt('pace', ROOM ? '1' : '0.05')); // multiplies bot think time
+const RIG = args.includes('--rig'); // every bot votes for the first bot (Ava) when it can
 
 const NAMES = ['Ava', 'Ben', 'Cruz', 'Dee', 'Eli', 'Fern', 'Gus', 'Hana', 'Ike', 'Jo', 'Kai', 'Lu', 'Max', 'Nia', 'Oz',
   'Pia', 'Quin', 'Rae', 'Sol', 'Tess', 'Uma', 'Vic', 'Wes', 'Xan', 'Yui', 'Zed', 'Abe', 'Bea', 'Cy', 'Di', 'Ed', 'Flo',
@@ -71,7 +73,7 @@ function bot(i, room) {
           return;
         }
         await wait(rand(1500, 9000));
-        if (roll < 0.4) out({ type: 'generate' });
+        if (roll < 0.4 && !RIG) out({ type: 'generate' });
         else out({ type: 'submit', text: QUIPS[Math.floor(Math.random() * QUIPS.length)] + ` (${name})` });
       }
 
@@ -83,13 +85,15 @@ function bot(i, room) {
           const b = v.ballots[idx];
           if (b.options.some((o) => o.text && o.text.includes(`(${name})`))) fail(`${name} saw own answer`);
           await wait(rand(1200, 4000));
-          out({ type: 'vote', ballot: idx, pick: b.options[Math.floor(Math.random() * b.options.length)].id });
+          const fav = RIG && b.options.find((o) => o.text && o.text.includes('(Ava)'));
+          out({ type: 'vote', ballot: idx, pick: (fav || b.options[Math.floor(Math.random() * b.options.length)]).id });
         }
       }
 
       if (v.phase === 'reveal' && lastRevealRound !== v.round) {
         lastRevealRound = v.round;
-        if (v.myResult) earned += v.myResult.wins;
+        if (v.myResult) earned += v.myResult.points;
+        if (v.myResult && v.myResult.points > v.roundCap) fail(`${name} got ${v.myResult.points} > cap ${v.roundCap}`);
         if (v.me.score !== earned) fail(`${name} score ${v.me.score} != earned ${earned}`);
       }
 

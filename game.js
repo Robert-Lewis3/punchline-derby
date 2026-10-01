@@ -20,9 +20,11 @@ const GENERATED_POINTS = 1;
 const TRAVEL_SHARE = 0.4;
 // Stand-in players for testing with fewer than MIN_PLAYERS people.
 const BOT_NAMES = ['Bot Bella', 'Bot Otto', 'Bot Zippy', 'Bot Rusty', 'Bot Pixel'];
-// Race track scale: a racer whose answers win this share of their matchups
-// every round reaches the finish line exactly at the end of the game.
-const FINISH_WIN_SHARE = 0.45;
+// Most points one answer can earn in a round, as a share of the matchups it
+// appears in. Stops a single runaway round from launching someone down the
+// track. The track is sized so maxing out every round lands you right at the
+// finish line, so one round can never move a racer more than 1/rounds of it.
+const MAX_ROUND_SHARE = 0.6;
 
 const randomId = (n = 8) => crypto.randomBytes(n).toString('hex').slice(0, n);
 
@@ -234,7 +236,9 @@ class Room {
     }
     this.prompts = this.pickPrompts(this.settings.rounds);
     const plan = ballotPlan(this.connectedPlayers().length);
-    this.raceScale = Math.max(1, this.prompts.length * plan.size * plan.count * FINISH_WIN_SHARE);
+    const shows = plan.size * plan.count; // times each answer is shown per round
+    this.roundCap = Math.min(shows, Math.max(2, Math.ceil(shows * MAX_ROUND_SHARE)));
+    this.raceScale = Math.max(1, this.prompts.length * this.roundCap);
     this.round = 0;
     this.history = [];
     this.beginPrompt();
@@ -371,7 +375,10 @@ class Room {
 
     for (const r of results) {
       const p = this.players.get(r.entry.authorId);
-      if (p) p.score += r.wins * (r.entry.generated ? GENERATED_POINTS : 1);
+      const earned = r.wins * (r.entry.generated ? GENERATED_POINTS : 1);
+      r.points = Math.min(earned, this.roundCap);
+      r.capped = earned > this.roundCap;
+      if (p) p.score += r.points;
     }
     // Tiebreakers for the final standings: round wins, then top-3 finishes.
     results.slice(0, 3).forEach((r, i) => {
@@ -443,6 +450,8 @@ class Room {
       text: r.entry.text,
       generated: r.entry.generated,
       wins: r.wins,
+      points: r.points,
+      capped: r.capped,
       shows: r.shows,
       rank: r.rank,
       author: p ? { id: p.id, name: p.name, char: p.char } : { id: null, name: '(left)', char: null },
@@ -492,6 +501,7 @@ class Room {
       prompt: inRound ? cur.prompt.text : null,
       standings: this.standings(),
       raceScale: this.raceScale || 1,
+      roundCap: this.roundCap || null,
     };
     if (this.showResults()) {
       view.top3 = cur.results.slice(0, 3).map((r) => this.resultCard(r));
@@ -518,6 +528,7 @@ class Room {
       me: { id: p.id, name: p.name, char: p.char, score: p.score, delta: p.score - p.prevScore, rank: standing.rank },
       playerCount: this.players.size,
       taken: [...this.takenChars(id)],
+      roundCap: this.roundCap || null,
     };
     if (this.phase === 'prompt') {
       const e = cur.entries.get(id);

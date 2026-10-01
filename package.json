@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/ballots.test.js test/prompts.test.js test/bots.test.js && node test/sim.js --bots 9 --rounds 3",
+    "test": "node --test test/ballots.test.js test/prompts.test.js test/bots.test.js test/scoring.test.js && node test/sim.js --bots 9 --rounds 3",
     "sim": "node test/sim.js"
   },
   "engines": {
