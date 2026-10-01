@@ -806,7 +806,7 @@ const PROMPTS = [
   // ---------------------------------------------------------------- general
   { id: 'g13', text: 'A rejected slogan for a toothpaste brand', answers: [
     'Now with 12% more toothpaste!',
-    'Your gums will be fine, probably.',
+    'Your gums have never looked redder.',
     'Minty enough to hurt.',
     "It's paste. For teeth.",
     "Brush with confidence. Or don't. We're not your mom.",
@@ -871,7 +871,7 @@ const PROMPTS = [
     'Old Penny',
   ] },
   { id: 'g16', text: 'A bad name for a racehorse', answers: [
-    'Glue Factory Maybe',
+    "Tomorrow's Glue Factory",
     'Almost There',
     'Sir Trots-a-Lot',
     'Definitely Not Three Dogs',
@@ -1121,7 +1121,7 @@ const PROMPTS = [
     'A live pigeon named Doug',
     'A rolling pin, for emergencies',
     'Seventy-three expired coupons',
-    'A photo of you at age 4, in the bath',
+    'A live pigeon she swears followed her home',
     'A peppermint fused to a dollar bill',
     'Enough tissues for a small nation',
     'Brass knuckles',
@@ -1150,7 +1150,7 @@ const PROMPTS = [
     'Fold Your Laundry Day',
     'Reply to Old Emails Week',
     'Bring Your Parents to Work Day',
-    'Tuesday 2',
+    'Second Tuesday',
     'National Traffic Jam Day',
     'Tax Audit Appreciation Day',
     'Monday Eve',
